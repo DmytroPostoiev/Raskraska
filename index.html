@@ -27,8 +27,8 @@ button{font:inherit;color:inherit;touch-action:manipulation}
 .b .ic{font-size:20px;line-height:1}
 .sep{width:2px;align-self:stretch;background:var(--line);margin:0 2px;border-radius:2px}
 #scroller{grid-area:c;min-width:0;min-height:0;overflow:auto;background:#d6cfc2;border-radius:14px;display:flex;padding:16px;-webkit-overflow-scrolling:touch}
-#wrap{position:relative;margin:auto;flex:none;background:#fff;box-shadow:0 4px 20px #0003;touch-action:none;cursor:crosshair}
-#wrap canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+#wrap{position:relative;margin:auto;flex:none;background:#fff;box-shadow:0 4px 20px #0003;touch-action:none;cursor:crosshair;will-change:transform}
+#wrap canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block;touch-action:none}
 #ring{position:fixed;pointer-events:none;border:2px solid #000;border-radius:50%;box-shadow:0 0 0 1px #fff;display:none;z-index:9}
 #panel{width:320px;flex:none;min-width:0;min-height:0;background:var(--panel);border-radius:14px;padding:12px;overflow:auto;display:flex;flex-direction:column;gap:12px;border:2px solid var(--line)}
 #panel h3{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;opacity:.6}
@@ -54,12 +54,6 @@ button{font:inherit;color:inherit;touch-action:manipulation}
 #photoCtl{display:flex;flex-direction:column;gap:6px;margin-top:8px}
 #photoCtl[hidden]{display:none}
 select{font:inherit;min-height:40px;border:2px solid var(--line);border-radius:10px;padding:4px 8px;background:#fff;flex:1}
-#works{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.work{position:relative;border:2px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer;background:#fff}
-.work.on{border-color:var(--acc)}
-.work img{width:100%;display:block;aspect-ratio:1;object-fit:cover}
-.work .wt{font-size:11px;padding:2px 4px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.work .wx{position:absolute;top:2px;right:2px;width:28px;height:28px;border-radius:50%;border:0;background:#fffd;font-size:18px;line-height:1;cursor:pointer;padding:0}
 #wrap #hint{opacity:.55}
 #busy{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#fffc;z-index:80;font-size:20px;font-weight:600}
 #busy[hidden]{display:none}
@@ -97,10 +91,13 @@ select{font:inherit;min-height:40px;border:2px solid var(--line);border-radius:1
       <button class="b" id="redo" title="Вернуть (Ctrl+Shift+Z)"><span class="ic">↷</span></button>
       <button class="b" id="clear" title="Стереть всё"><span class="ic">🗑</span></button>
       <button class="b" id="save" title="Сохранить PNG"><span class="ic">💾</span><span class="t">Сохранить</span></button>
+      <button class="b" id="photoBtn" title="Моё фото / рисунок"><span class="ic">📷</span><span class="t">Фото</span></button>
       <span class="sep"></span>
       <button class="b" id="zout"><span class="ic">−</span></button>
       <span id="zlab" style="min-width:48px;text-align:center;font-size:14px">100%</span>
       <button class="b" id="zin"><span class="ic">+</span></button>
+      <button class="b" id="rotL" title="Повернуть влево"><span class="ic">↺</span></button>
+      <button class="b" id="rotR" title="Повернуть вправо"><span class="ic">↻</span></button>
     </div>
     <div id="scroller">
       <div id="wrap">
@@ -111,14 +108,10 @@ select{font:inherit;min-height:40px;border:2px solid var(--line);border-radius:1
     </div>
   <div id="panel">
     <div>
-      <h3>Мои работы <span id="saveStat" style="text-transform:none;font-weight:400;letter-spacing:0"></span></h3>
-      <div id="works"></div>
-    </div>
-    <div>
       <h3>Картинка</h3>
       <div id="pics"></div>
-      <div style="margin-top:6px">
-        <label class="b" style="width:100%"><span class="ic">📷</span><span>Моё фото / рисунок → раскраска</span>
+      <div style="margin-top:8px">
+        <label class="b" style="width:100%;background:#eef0ff;border-color:var(--acc);font-weight:600"><span class="ic">📷</span><span>Моё фото / рисунок → раскраска</span>
           <input type="file" id="file" accept="image/*" hidden>
         </label>
       </div>
@@ -423,24 +416,24 @@ function labelAt(x,y){
 /* ---------- отмена ---------- */
 function snap(){const c=mk();c.getContext('2d').drawImage(paint,0,0);return c}
 function pushUndo(){undo.push(snap());if(undo.length>12)undo.shift();redo.length=0;btns()}
-function doUndo(){if(!undo.length)return;redo.push(snap());const b=undo.pop();pctx.clearRect(0,0,W,H);pctx.drawImage(b,0,0);btns();markDirty()}
+function doUndo(){if(!undo.length)return;redo.push(snap());const b=undo.pop();pctx.clearRect(0,0,W,H);pctx.drawImage(b,0,0);btns()}
 function doRedo(){if(!redo.length)return;undo.push(snap());const b=redo.pop();pctx.clearRect(0,0,W,H);pctx.drawImage(b,0,0);btns()}
 function btns(){$('#undo').disabled=$('#fabUndo').disabled=!undo.length;$('#redo').disabled=$('#fabRedo').disabled=!redo.length}
 
 /* ---------- картинка ---------- */
 function setPicture(i){
-  curPic=i;cur={kind:'builtin',pic:i};photo=null;$('#photoCtl').hidden=true;
+  curPic=i;photo=null;$('#photoCtl').hidden=true;
   lctx.clearRect(0,0,W,H);
   lctx.save();lctx.scale(K,K);pictures[i].draw(lctx,7);lctx.restore();
   afterNewImage();
   document.querySelectorAll('#pics button').forEach((b,j)=>b.classList.toggle('on',j===i));
 }
 function resetState(){
-  painted=false;pctx.clearRect(0,0,W,H);undo.length=0;redo.length=0;btns();
+  pctx.clearRect(0,0,W,H);undo.length=0;redo.length=0;btns();
   hctx.clearRect(0,0,W,H);hint.style.display='none';
 }
-function afterNewImage(){resetState();computeLabels()}
-function hasPaint(){return painted||undo.length>0}
+function afterNewImage(){resetState();computeLabels();rot=0;if(typeof layout==='function')layout()}
+function hasPaint(){return undo.length>0}
 const picsEl=$('#pics');
 pictures.forEach((p,i)=>{
   const b=document.createElement('button');
@@ -448,7 +441,7 @@ pictures.forEach((p,i)=>{
   const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,120,120);
   x.scale(.12,.12);p.draw(x,16);
   b.appendChild(c);b.appendChild(document.createTextNode(p.name));
-  b.onclick=async()=>{if(needConfirm()&&!confirm('Начать новую картинку? Текущая раскраска пропадёт.'))return;await startNew(()=>setPicture(i))};
+  b.onclick=()=>{if(hasPaint()&&!confirm('Начать новую картинку? Текущая раскраска пропадёт.'))return;setPicture(i)};
   picsEl.appendChild(b);
 });
 /* ---------- фото -> раскраска ---------- */
@@ -597,7 +590,6 @@ function convertPhoto(){
   setLinesFromAlpha(al,gray);
   if(frame){lctx.save();lctx.lineWidth=6;lctx.strokeStyle='#000';lctx.strokeRect(3,3,W-6,H-6);lctx.restore()}
   drawHint();
-  if(curId)queueSave(true);
 }
 function withBusy(fn){
   const b=$('#busy');b.hidden=false;
@@ -613,7 +605,7 @@ function loadPhoto(img){
   x.drawImage(img,(W-w)/2,(H-h)/2,w,h);
   const px=x.getImageData(0,0,W,H).data,g=new Float32Array(W*H);
   for(let i=0;i<W*H;i++)g[i]=px[i*4]*.299+px[i*4+1]*.587+px[i*4+2]*.114;
-  photo={g,px};cur={kind:'photo',srcP:new Promise(r=>t.toBlob(r,'image/jpeg',.9))};
+  photo={g,px};
   $('#photoCtl').hidden=false;
   document.querySelectorAll('#pics button').forEach(b=>b.classList.remove('on'));
   $('#pHint').checked=photoSet.mode==='color';
@@ -637,12 +629,13 @@ $('#pTh').addEventListener('input',e=>$('#pThO').textContent=e.target.value);
 ['pMode','pDet','pTh'].forEach(id=>$('#'+id).addEventListener('change',photoChanged));
 $('#file').addEventListener('change',e=>{
   const f=e.target.files[0];e.target.value='';if(!f)return;
-  if(needConfirm()&&!confirm('Загрузить новую картинку? Текущая раскраска пропадёт.'))return;
+  if(hasPaint()&&!confirm('Загрузить новую картинку? Текущая раскраска пропадёт.'))return;
   const img=new Image();
-  img.onload=async()=>{await startNew(()=>loadPhoto(img));URL.revokeObjectURL(img.src)};
+  img.onload=()=>{loadPhoto(img);URL.revokeObjectURL(img.src)};
   img.onerror=()=>alert('Не удалось открыть картинку.');
   img.src=URL.createObjectURL(f);
 });
+$('#photoBtn').onclick=()=>$('#file').click();
 
 /* ---------- цвета ---------- */
 function hsl(h,s,l){s/=100;l/=100;const a=s*Math.min(l,1-l),f=n=>{const k=(n+h/30)%12;const v=l-a*Math.max(-1,Math.min(k-3,9-k,1));return Math.round(255*v).toString(16).padStart(2,'0')};return'#'+f(0)+f(8)+f(4)}
@@ -655,7 +648,6 @@ colors.forEach(c=>$('#pal').appendChild(swatch(c)));
 function setColor(c){
   color=c;$('#curSw').style.background=c;$('#hex').textContent=c.toUpperCase();$('#colorIn').value=c.length===7?c:'#000000';
   document.querySelectorAll('.sw').forEach(s=>s.classList.toggle('sel',s.dataset.c===c));
-  saveSet();
   if(tool==='pipette'||tool==='hand'||tool==='eraser')setTool('brush');
 }
 $('#colorIn').addEventListener('input',e=>setColor(e.target.value));
@@ -663,7 +655,6 @@ function addRecent(c){
   const i=recent.indexOf(c);if(i>=0)recent.splice(i,1);recent.unshift(c);if(recent.length>16)recent.pop();
   const r=$('#recent');r.innerHTML='';recent.forEach(x=>r.appendChild(swatch(x)));
   document.querySelectorAll('.sw').forEach(s=>s.classList.toggle('sel',s.dataset.c===color));
-  saveSet();
 }
 
 /* ---------- инструменты ---------- */
@@ -675,36 +666,58 @@ function setTool(t){
 }
 document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>setTool(b.dataset.tool));
 $('#undo').onclick=doUndo;$('#redo').onclick=doRedo;
-$('#clear').onclick=()=>{if(!confirm('Стереть всю раскраску?'))return;pushUndo();pctx.clearRect(0,0,W,H);markDirty()};
+$('#clear').onclick=()=>{if(!confirm('Стереть всю раскраску?'))return;pushUndo();pctx.clearRect(0,0,W,H)};
 $('#save').onclick=()=>{
   const c=mk(),x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,W,H);x.drawImage(paint,0,0);x.drawImage(lines,0,0);
   c.toBlob(b=>{const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='raskraska.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)},'image/png');
 };
-$('#size').oninput=e=>{size=+e.target.value;$('#sizeO').textContent=size;saveSet()};
-$('#op').oninput=e=>{opacity=e.target.value/100;$('#opO').textContent=e.target.value;saveSet()};
-let fingerPan=false;$('#finger').onchange=e=>{fingerPan=e.target.checked;saveSet()};
+$('#size').oninput=e=>{size=+e.target.value;$('#sizeO').textContent=size};
+$('#op').oninput=e=>{opacity=e.target.value/100;$('#opO').textContent=e.target.value};
+let fingerPan=false;$('#finger').onchange=e=>fingerPan=e.target.checked;
 
-/* ---------- масштаб ---------- */
+/* ---------- масштаб + поворот ---------- */
+let rot=0; // degrees
 function layout(){
   const base=Math.max(200,Math.min(scroller.clientWidth,scroller.clientHeight)-32);
-  wrap.style.width=wrap.style.height=Math.round(base*zoom)+'px';
+  const s=Math.round(base*zoom);
+  wrap.style.width=wrap.style.height=s+'px';
+  wrap.style.transform=`rotate(${rot}deg)`;
+  wrap.style.transformOrigin='center center';
 }
 function setZoom(z){
-  z=Math.max(1,Math.min(4,z));if(z===zoom)return;
+  z=Math.max(0.5,Math.min(5,z));if(Math.abs(z-zoom)<0.01)return;
   const fx=(scroller.scrollLeft+scroller.clientWidth/2)/scroller.scrollWidth,fy=(scroller.scrollTop+scroller.clientHeight/2)/scroller.scrollHeight;
   zoom=z;layout();
   scroller.scrollLeft=fx*scroller.scrollWidth-scroller.clientWidth/2;
   scroller.scrollTop=fy*scroller.scrollHeight-scroller.clientHeight/2;
   $('#zlab').textContent=Math.round(zoom*100)+'%';
 }
-$('#zin').onclick=()=>setZoom(zoom+.5);$('#zout').onclick=()=>setZoom(zoom-.5);
+function setRot(r){
+  rot=((r%360)+360)%360;
+  layout();
+}
+$('#zin').onclick=()=>setZoom(zoom+.25);$('#zout').onclick=()=>setZoom(zoom-.25);
+$('#rotL').onclick=()=>setRot(rot-15);$('#rotR').onclick=()=>setRot(rot+15);
 addEventListener('resize',layout);
 
 /* ---------- мазок ---------- */
-let st=null,pan=null;
-function pos(e){const r=wrap.getBoundingClientRect();return[(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height]}
+let st=null,pan=null,gesture=null,activePointers=new Map();
+let rafPending=false, pendingSeg=null;
+function pos(e){
+  // Map client coords to canvas local coords, accounting for CSS rotate
+  const r=wrap.getBoundingClientRect();
+  const cx=r.left+r.width/2, cy=r.top+r.height/2;
+  const dx=e.clientX-cx, dy=e.clientY-cy;
+  const rad=-rot*Math.PI/180;
+  const cos=Math.cos(rad), sin=Math.sin(rad);
+  const lx=dx*cos-dy*sin, ly=dx*sin+dy*cos;
+  // local unrotated size is the style width/height (before rotate the AABB is larger, but content size is style)
+  const sw=parseFloat(wrap.style.width)||r.width;
+  const sh=parseFloat(wrap.style.height)||r.height;
+  return[(lx+sw/2)*W/sw, (ly+sh/2)*H/sh];
+}
 function pressureW(e){
-  if(e.pointerType==='pen'&&e.pressure>0)return size*(0.35+e.pressure*1.3);
+  if(e.pointerType==='pen'&&e.pressure>0)return size*(0.25+e.pressure*1.5);
   return size;
 }
 function rectOf(x0,y0,x1,y1,m){
@@ -731,7 +744,20 @@ function refresh(r,m,base,erase){
 function segment(x0,y0,x1,y1,w){
   sctx.lineWidth=w;sctx.beginPath();sctx.moveTo(x0,y0);sctx.lineTo(x1+.01,y1+.01);sctx.stroke();
   const pad=w/2+3;
-  refresh(rectOf(Math.min(x0,x1)-pad,Math.min(y0,y1)-pad,Math.max(x0,x1)+pad,Math.max(y0,y1)+pad,st.m),st.m,st.base,st.erase);
+  const rr=rectOf(Math.min(x0,x1)-pad,Math.min(y0,y1)-pad,Math.max(x0,x1)+pad,Math.max(y0,y1)+pad,st.m);
+  if(rr){
+    pendingSeg={r:rr,m:st.m,base:st.base,erase:st.erase};
+    if(!rafPending){
+      rafPending=true;
+      requestAnimationFrame(()=>{
+        rafPending=false;
+        if(pendingSeg){
+          refresh(pendingSeg.r,pendingSeg.m,pendingSeg.base,pendingSeg.erase);
+          pendingSeg=null;
+        }
+      });
+    }
+  }
 }
 function fillAt(x,y){
   const l=labelAt(x,y);if(!l)return;
@@ -749,7 +775,6 @@ function fillAt(x,y){
   pctx.globalAlpha=opacity;
   pctx.drawImage(tmp,r.x,r.y,r.w,r.h,r.x,r.y,r.w,r.h);
   pctx.globalAlpha=1;
-  markDirty();
 }
 function pick(x,y){
   const xi=Math.max(0,Math.min(W-1,Math.round(x))),yi=Math.max(0,Math.min(H-1,Math.round(y)));
@@ -762,14 +787,53 @@ function pick(x,y){
   setColor('#'+f(d[0])+f(d[1])+f(d[2]));
 }
 function moveRing(e){
-  if(e.pointerType==='touch'||tool==='hand'||tool==='pipette'||tool==='fill'){ring.style.display='none';return}
-  const d=Math.max(6,size*wrap.clientWidth/W);
+  if(e.pointerType==='touch'||tool==='hand'||tool==='pipette'||tool==='fill'||gesture){ring.style.display='none';return}
+  const d=Math.max(6,size*(parseFloat(wrap.style.width)||wrap.clientWidth)/W);
   ring.style.display='block';ring.style.width=ring.style.height=d+'px';
   ring.style.left=(e.clientX-d/2)+'px';ring.style.top=(e.clientY-d/2)+'px';
 }
+function startGesture(){
+  if(st){st=null;sctx.clearRect(0,0,W,H)}
+  if(pan)pan=null;
+  const pts=[...activePointers.values()];
+  if(pts.length<2)return;
+  const [p1,p2]=pts;
+  const dx=p2.x-p1.x,dy=p2.y-p1.y;
+  gesture={
+    dist:Math.hypot(dx,dy)||1,
+    angle:Math.atan2(dy,dx)*180/Math.PI,
+    midX:(p1.x+p2.x)/2,midY:(p1.y+p2.y)/2,
+    zoom0:zoom,rot0:rot,
+    scrollL:scroller.scrollLeft,scrollT:scroller.scrollTop
+  };
+}
+function updateGesture(){
+  if(!gesture||activePointers.size<2)return;
+  const pts=[...activePointers.values()];
+  const [p1,p2]=pts;
+  const dx=p2.x-p1.x,dy=p2.y-p1.y;
+  const dist=Math.hypot(dx,dy)||1;
+  const angle=Math.atan2(dy,dx)*180/Math.PI;
+  const scale=dist/gesture.dist;
+  setZoom(gesture.zoom0*scale);
+  // rotation: only if significant change and not pure pinch
+  const dang=angle-gesture.angle;
+  if(Math.abs(dang)>2||Math.abs(dang)<358){
+    setRot(gesture.rot0+dang);
+  }
+  // pan with midpoint
+  const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;
+  scroller.scrollLeft=gesture.scrollL-(mx-gesture.midX);
+  scroller.scrollTop=gesture.scrollT-(my-gesture.midY);
+}
 wrap.addEventListener('pointerdown',e=>{
-  if(st||pan)return;
   e.preventDefault();
+  activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY,type:e.pointerType});
+  if(activePointers.size>=2){
+    startGesture();
+    return;
+  }
+  if(st||pan||gesture)return;
   if(tool==='hand'||(fingerPan&&e.pointerType==='touch')){
     pan={id:e.pointerId,x:e.clientX,y:e.clientY};wrap.setPointerCapture(e.pointerId);return;
   }
@@ -789,7 +853,13 @@ wrap.addEventListener('pointerdown',e=>{
   moveRing(e);
 });
 wrap.addEventListener('pointermove',e=>{
+  if(activePointers.has(e.pointerId))activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY,type:e.pointerType});
   moveRing(e);
+  if(gesture&&activePointers.size>=2){
+    e.preventDefault();
+    updateGesture();
+    return;
+  }
   if(pan&&e.pointerId===pan.id){
     scroller.scrollLeft-=e.clientX-pan.x;scroller.scrollTop-=e.clientY-pan.y;
     pan.x=e.clientX;pan.y=e.clientY;return;
@@ -804,8 +874,14 @@ wrap.addEventListener('pointermove',e=>{
   });
 });
 function endPtr(e){
+  activePointers.delete(e.pointerId);
+  if(gesture&&activePointers.size<2)gesture=null;
   if(pan&&e.pointerId===pan.id)pan=null;
-  if(st&&e.pointerId===st.id){st=null;markDirty()}
+  if(st&&e.pointerId===st.id){
+    // force final refresh
+    if(pendingSeg){refresh(pendingSeg.r,pendingSeg.m,pendingSeg.base,pendingSeg.erase);pendingSeg=null}
+    st=null;
+  }
 }
 wrap.addEventListener('pointerup',endPtr);
 wrap.addEventListener('pointercancel',endPtr);
@@ -882,146 +958,9 @@ addEventListener('resize',()=>{if(!ui.barOn)placeFab()});
 if(window.ResizeObserver)new ResizeObserver(()=>layout()).observe(scroller);
 applyUi();
 
-/* ---------- автосохранение и «Мои работы» ---------- */
-let cur={kind:'builtin',pic:0},curId=null,curMeta=null,painted=false,dbOk=true,saveTimer=0,needBase=false,saving=Promise.resolve();
-function saveSet(){try{localStorage.setItem('raskraska-set',JSON.stringify({color,size,op:Math.round(opacity*100),finger:fingerPan,recent}))}catch(e){}}
-function loadSet(){
-  try{
-    const o=JSON.parse(localStorage.getItem('raskraska-set')||'null');if(!o)return;
-    if(o.color)color=o.color;
-    if(o.size){size=o.size;$('#size').value=size;$('#sizeO').textContent=size}
-    if(o.op){opacity=o.op/100;$('#op').value=o.op;$('#opO').textContent=o.op}
-    if(o.finger){fingerPan=true;$('#finger').checked=true}
-    if(Array.isArray(o.recent)){recent.length=0;o.recent.slice(0,16).forEach(c=>recent.push(c));const r=$('#recent');r.innerHTML='';recent.forEach(x=>r.appendChild(swatch(x)))}
-  }catch(e){}
-}
-const rq=r=>new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
-let dbp=null;
-function db(){
-  if(!dbp)dbp=new Promise((res,rej)=>{
-    if(!window.indexedDB){rej(new Error('no indexedDB'));return}
-    const r=indexedDB.open('raskraska',1);
-    r.onupgradeneeded=()=>{const d=r.result;['works','base','paint'].forEach(n=>d.createObjectStore(n,{keyPath:'id'}))};
-    r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);
-  });
-  return dbp;
-}
-async function dbPut(s,v){const d=await db();return rq(d.transaction(s,'readwrite').objectStore(s).put(v))}
-async function dbGet(s,k){const d=await db();return rq(d.transaction(s,'readonly').objectStore(s).get(k))}
-async function dbAll(s){const d=await db();return rq(d.transaction(s,'readonly').objectStore(s).getAll())}
-async function dbDel(s,k){const d=await db();return rq(d.transaction(s,'readwrite').objectStore(s).delete(k))}
-const blobOf=c=>new Promise(r=>c.toBlob(r,'image/png'));
-const blobImg=b=>new Promise((res,rej)=>{const u=URL.createObjectURL(b),i=new Image();i.onload=()=>{URL.revokeObjectURL(u);res(i)};i.onerror=rej;i.src=u});
-const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-function stat(t){$('#saveStat').textContent=t}
-function needConfirm(){return !dbOk&&hasPaint()}
-function packLabels(){const u=new Uint16Array(labels.length),n=bx0.length-1;if(n<=65535){u.set(labels);return u}return labels.slice()}
-function markDirty(){painted=true;queueSave(false)}
-function queueSave(base){needBase=needBase||base;clearTimeout(saveTimer);saveTimer=setTimeout(doSave,700);stat('…')}
-function doSave(){
-  saveTimer=0;const nb=needBase;needBase=false;
-  saving=saving.then(()=>actualSave(nb)).catch(e=>{console.error(e);dbOk=false;stat('⚠ нет автосохранения')});
-  return saving;
-}
-function flushSave(){if(saveTimer){clearTimeout(saveTimer);return doSave()}return saving}
-async function actualSave(nb){
-  let id=curId;
-  if(!id){
-    if(!painted)return;
-    id=curId=uid();nb=true;
-    curMeta={id,name:cur.kind==='photo'?'Фото':pictures[cur.pic].name,created:Date.now()};
-  }
-  const paintB=await blobOf(paint);
-  if(nb){
-    const photoMode=cur.kind==='photo';
-    const lb=await blobOf(lines),hb=photoMode?await blobOf(hint):null,src=photoMode?await cur.srcP:null;
-    await dbPut('base',{id,lines:lb,hint:hb,src,labels:packLabels()});
-  }
-  await dbPut('paint',{id,blob:paintB});
-  const th=document.createElement('canvas');th.width=th.height=180;
-  const x=th.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,180,180);
-  x.drawImage(paint,0,0,180,180);x.drawImage(lines,0,0,180,180);
-  curMeta.updated=Date.now();
-  await dbPut('works',Object.assign({},curMeta,{kind:cur.kind,pic:cur.pic,photoSet:cur.kind==='photo'?photoSet:null,hintOn:hint.style.display!=='none',painted,thumb:th.toDataURL('image/jpeg',.7)}));
-  try{localStorage.setItem('raskraska-last',id)}catch(e){}
-  dbOk=true;stat('✓ сохранено');refreshWorks();
-}
-async function startNew(fn){await flushSave();curId=null;curMeta=null;painted=false;fn()}
-async function refreshWorks(){
-  const box=$('#works');let list=[];
-  try{list=await dbAll('works')}catch(e){}
-  list.sort((a,b)=>b.updated-a.updated);
-  box.innerHTML='';
-  if(!list.length){const e=document.createElement('div');e.style.cssText='font-size:13px;opacity:.6;grid-column:1/-1';e.textContent='Пока пусто. Работы сохраняются сами.';box.appendChild(e);return}
-  list.forEach(m=>{
-    const d=document.createElement('div');d.className='work'+(m.id===curId?' on':'');
-    const im=document.createElement('img');im.src=m.thumb;im.alt='';
-    const t=document.createElement('div');t.className='wt';
-    t.textContent=m.name+' · '+new Date(m.updated).toLocaleDateString('ru',{day:'numeric',month:'short'});
-    const x=document.createElement('button');x.className='wx';x.textContent='×';x.title='Удалить';
-    x.onclick=ev=>{ev.stopPropagation();delWork(m.id)};
-    d.onclick=()=>openWork(m.id);
-    d.append(im,t,x);box.appendChild(d);
-  });
-}
-async function delWork(id){
-  if(!confirm('Удалить эту работу?'))return;
-  await flushSave();
-  await Promise.all([dbDel('works',id),dbDel('base',id),dbDel('paint',id)]);
-  if(id===curId){curId=null;curMeta=null;painted=false}
-  try{if(localStorage.getItem('raskraska-last')===id)localStorage.removeItem('raskraska-last')}catch(e){}
-  refreshWorks();
-}
-async function openWork(id){
-  if(id===curId)return;
-  const busy=$('#busy');busy.hidden=false;
-  try{
-    await flushSave();
-    const[meta,base,pn]=await Promise.all([dbGet('works',id),dbGet('base',id),dbGet('paint',id)]);
-    if(!meta||!base){alert('Работа не найдена.');return}
-    const li=await blobImg(base.lines);
-    lctx.clearRect(0,0,W,H);lctx.drawImage(li,0,0);
-    labels=new Int32Array(base.labels.length);labels.set(base.labels);
-    finalize(0);
-    hctx.clearRect(0,0,W,H);
-    if(base.hint)hctx.drawImage(await blobImg(base.hint),0,0);
-    hint.style.display=(meta.hintOn&&base.hint)?'block':'none';
-    pctx.clearRect(0,0,W,H);
-    if(pn&&pn.blob)pctx.drawImage(await blobImg(pn.blob),0,0);
-    undo.length=0;redo.length=0;btns();
-    if(meta.kind==='photo'&&base.src){
-      const si=await blobImg(base.src),t=document.createElement('canvas');t.width=W;t.height=H;
-      const x=t.getContext('2d');x.drawImage(si,0,0,W,H);
-      const px=x.getImageData(0,0,W,H).data,g=new Float32Array(W*H);
-      for(let i=0;i<W*H;i++)g[i]=px[i*4]*.299+px[i*4+1]*.587+px[i*4+2]*.114;
-      photo={g,px};photoSet=meta.photoSet||photoSet;
-      $('#photoCtl').hidden=false;syncPhotoCtl();$('#pHint').checked=!!meta.hintOn;
-      cur={kind:'photo',srcP:Promise.resolve(base.src)};
-      document.querySelectorAll('#pics button').forEach(b=>b.classList.remove('on'));
-    }else{
-      photo=null;$('#photoCtl').hidden=true;
-      cur={kind:'builtin',pic:meta.pic||0};curPic=cur.pic;
-      document.querySelectorAll('#pics button').forEach((b,j)=>b.classList.toggle('on',j===cur.pic));
-    }
-    curId=id;curMeta={id:meta.id,name:meta.name,created:meta.created};painted=!!meta.painted;
-    try{localStorage.setItem('raskraska-last',id)}catch(e){}
-    stat('✓ открыто');refreshWorks();
-  }catch(e){console.error(e);alert('Не удалось открыть работу: '+e.message)}
-  finally{busy.hidden=true}
-}
-async function restoreLast(){
-  try{await db()}catch(e){dbOk=false;stat('⚠ нет автосохранения');return}
-  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
-  refreshWorks();
-  let id=null;try{id=localStorage.getItem('raskraska-last')}catch(e){}
-  if(id&&await dbGet('works',id))await openWork(id);
-}
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushSave()});
-addEventListener('pagehide',()=>{flushSave()});
-
 /* ---------- старт ---------- */
-loadSet();layout();setColor(color);
-setPicture(0);restoreLast();
+layout();setColor(color);addRecent(color);recent.length=0;$('#recent').innerHTML='';
+setPicture(0);
 })();
 </script>
 </body>
